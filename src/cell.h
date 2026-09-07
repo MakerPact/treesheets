@@ -469,6 +469,11 @@ struct Cell {
                 cellcolor = original->cellcolor;
                 textcolor = original->textcolor;
                 text.stylebits = original->text.stylebits;
+                // When pasting entirely new content into a new parent, it should match the relsize of the parent context.
+                // If a grid is copied, its children will maintain relative sizes since they are relative to this cell.
+                if (parent != nullptr) {
+                    text.relsize = parent->text.relsize;
+                }
             }
             text.Insert(document, original->text.t, selection, false);
         }
@@ -514,25 +519,32 @@ struct Cell {
 
     Cell *FindLink(const Selection &sel, Cell *link, Cell *best, bool &lastthis, bool &stylematch,
                    bool forward, bool image) {
-        if (grid) { best = grid->FindLink(sel, link, best, lastthis, stylematch, forward, image); }
+        if (!forward && grid) { best = grid->FindLink(sel, link, best, lastthis, stylematch, forward, image); }
+
         if (link == this) {
             lastthis = true;
-            return best;
-        }
-        if (image ? link->text.image == text.image
-                  : link->text.ToText(0, sel, A_EXPTEXT) == text.t) {
-            if (link->text.stylebits != text.stylebits || link->cellcolor != cellcolor ||
-                link->textcolor != textcolor) {
-                if (!stylematch) { best = nullptr; }
+        } else if (image ? (text.image != nullptr && link->text.image == text.image)
+                         : (HasText() && link->text.ToText(0, sel, A_EXPTEXT) == text.t)) {
+            // Find an exact match, but prioritize identical styles.
+            bool is_style_match = (link->text.stylebits == text.stylebits &&
+                                   link->cellcolor == cellcolor &&
+                                   link->textcolor == textcolor);
+
+            if (is_style_match && !stylematch) {
                 stylematch = true;
-            } else if (stylematch) {
-                return best;
+                best = nullptr; // Reset best, as we now only care about exact style matches.
             }
-            if (best == nullptr || lastthis) {
-                lastthis = false;
-                return this;
+
+            if (is_style_match || !stylematch) {
+                if (best == nullptr || lastthis) {
+                    lastthis = false;
+                    best = this;
+                }
             }
         }
+
+        if (forward && grid) { best = grid->FindLink(sel, link, best, lastthis, stylematch, forward, image); }
+
         return best;
     }
 

@@ -241,7 +241,10 @@ nfr("set_image_display_scale", "scale", "I", "", "set display scale (in integer 
     });
 }
 
-NativeRegistry natreg;  // FIXME: global.
+static NativeRegistry& GetNativeRegistry() {
+    static NativeRegistry natreg;
+    return natreg;
+}
 
 string InitLobster(ScriptInterface *_si, const char *exefilepath, const char *auxfilepath,
                    bool from_bundle, FileLoader sl) {
@@ -250,8 +253,8 @@ string InitLobster(ScriptInterface *_si, const char *exefilepath, const char *au
     string err;
     try {
         InitPlatform(exefilepath, auxfilepath, from_bundle, sl);
-        RegisterBuiltin(natreg, "ts", "treesheets", AddTreeSheets);
-        RegisterCoreLanguageBuiltins(natreg);
+        RegisterBuiltin(GetNativeRegistry(), "ts", "treesheets", AddTreeSheets);
+        RegisterCoreLanguageBuiltins(GetNativeRegistry());
     } catch (string &s) { err = s; }
     return err;
 }
@@ -261,9 +264,9 @@ string RunLobster(std::string_view filename, std::string_view code, bool dump_bu
     try {
         string bytecode;
         string codegen;
-        Compile(natreg, filename, code, bytecode, nullptr, nullptr, false, RUNTIME_ASSERT, nullptr,
+        Compile(GetNativeRegistry(), filename, code, bytecode, nullptr, nullptr, false, RUNTIME_ASSERT, nullptr,
                 1, false, true, codegen, false, filename);
-        auto ret = RunTCC(natreg, bytecode, filename, nullptr, {}, false, err, RUNTIME_ASSERT, true,
+        auto ret = RunTCC(GetNativeRegistry(), bytecode, filename, nullptr, {}, false, err, RUNTIME_ASSERT, true,
                           false, codegen);
     } catch (string &s) {
         err = s;
@@ -271,6 +274,6 @@ string RunLobster(std::string_view filename, std::string_view code, bool dump_bu
     return err;
 }
 
-void TSDumpBuiltinDoc() { DumpBuiltinDoc(natreg, true); }
+void TSDumpBuiltinDoc() { DumpBuiltinDoc(GetNativeRegistry(), true); }
 
 }  // namespace script
