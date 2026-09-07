@@ -272,6 +272,10 @@ struct Document {
         if ((layoutys * currentviewscale > ch || layoutxs * currentviewscale > cw) &&
             selected.grid != nullptr) {
             wxRect r = selected.grid->GetRect(this, selected);
+            r.x *= currentviewscale;
+            r.y *= currentviewscale;
+            r.width *= currentviewscale;
+            r.height *= currentviewscale;
             if (r.y < sy || r.y + r.height > my || r.x < sx || r.x + r.width > mx) {
                 canvas->Scroll(r.width > cw || r.x < sx ? r.x
                                : r.x + r.width > mx     ? r.x + r.width - cw
@@ -968,6 +972,7 @@ struct Document {
                     case WXK_END:
                         return Action(shift ? (ctrl ? A_SEND : A_SEND) : (ctrl ? A_CEND : A_END));
                     case WXK_TAB:
+                    #ifdef __WXGTK__
                         if (ctrl && !shift) {
                             // WXK_CONTROL_I (italics) arrives as the same keycode as WXK_TAB + ctrl
                             // on Linux?? They're both keycode 9 in defs.h We ignore it here, such
@@ -979,6 +984,7 @@ struct Document {
                             // the current tab (requires a click to re-activate). FIXME??
                             break;
                         }
+                    #endif
                         return Action(shift ? (ctrl ? A_PREVFILE : A_PREV)
                                             : (ctrl ? A_NEXTFILE : A_NEXT));
                     case WXK_PAGEUP:
@@ -1926,7 +1932,7 @@ struct Document {
             case A_LASTBORDCOLOR:
             case A_LASTIMAGE:
                 selected.grid->cell->AddUndo(this);
-                loopallcellssel(c, true) switch (action) {
+                loopallcellssel(c, false) switch (action) {
                     case A_RESETSIZE: c->text.relsize = 0; break;
                     case A_RESETWIDTH:
                         for (int x = selected.x; x < selected.x + selected.xs; x++) {
