@@ -1848,6 +1848,9 @@ struct Document {
                 if (selected.TextEdit()) {
                     selected.Cursor(this, action == A_PROGRESSCELL ? A_RIGHT : A_DOWN, false, false,
                                     true);
+                    UpdateLayout();
+                    ScrollIfSelectionOutOfView();
+                    canvas->Refresh();
                 } else {
                     selected.EnterEdit(
                         this,
@@ -2290,12 +2293,8 @@ struct Document {
 
         switch (action) {
             case A_CANCELEDIT:
-                if (LastUndoSameCellTextEdit(cell)) {
-                    Undo(undolist, redolist);
-                } else {
-                    UpdateLayout();
-                    canvas->Refresh();
-                }
+                UpdateLayout();
+                canvas->Refresh();
                 selected.ExitEdit(this);
                 return wxEmptyString;
 
