@@ -553,6 +553,7 @@ struct Grid {
             }
         }
         if (dx >= 0 && nxs > 0) { colwidths.insert(colwidths.begin() + dx, nxs, cell->ColWidth()); }
+        cell->ResetLayout();
     }
 
     void Save(wxDataOutputStream &dos, Cell *ocs) const {
