@@ -7,6 +7,12 @@ struct Text {
     Cell *cell {nullptr};
     Image *image {nullptr};
     wxString t {wxEmptyString};
+
+    int GetWordCount() const {
+        if (t.IsEmpty()) return 0;
+        return wxStringTokenize(t).GetCount();
+    }
+
     int relsize {0};
     int stylebits {0};
     int extent {0};

@@ -440,6 +440,8 @@ struct TSFrame : wxFrame {
                      _("Adds a NxN grid to the selected cell"));
             MyAppend(editmenu, A_WRAP, _("&Wrap in new parent") + "\tF9",
                      _("Creates a new level of hierarchy around the current selection"));
+            MyAppend(editmenu, A_SPLIT_CELL, _("Split Cell") + "\tSHIFT+ALT+S",
+                     _("Splits the current cell at the cursor position and inserts a new cell below"));
             editmenu->AppendSeparator();
             // F10 is tied to the OS on both Ubuntu and OS X, and SHIFT+F10 is now right
             // click on all platforms?
@@ -1681,7 +1683,7 @@ struct TSFrame : wxFrame {
     void UpdateStatus(const Selection &s, bool updateamount) {
         if (GetStatusBar() != nullptr && s.grid != nullptr) {
             if (Cell *c = s.GetCell(); c != nullptr && s.xs != 0) {
-                SetStatusText(wxString::Format(_("Size %d"), -c->text.relsize), 3);
+                SetStatusText(wxString::Format(_("Size %d (%d words)"), -c->text.relsize, c->text.GetWordCount()), 3);
                 SetStatusText(wxString::Format(_("Width %d"), s.grid->colwidths[s.x]), 2);
                 SetStatusText(wxString::Format(_("Edited %s %s"), c->text.lastedit.FormatDate(),
                                                c->text.lastedit.FormatTime()),
@@ -1689,7 +1691,22 @@ struct TSFrame : wxFrame {
             } else {
                 for (int field : {1, 2, 3}) { SetStatusText("", field); }
             }
-            if (updateamount) { SetStatusText(wxString::Format(_("%d cell(s)"), s.xs * s.ys), 4); }
+            if (updateamount) {
+                int total_words = 0;
+                for (int y = s.y; y < s.y + s.ys; y++) {
+                    for (int x = s.x; x < s.x + s.xs; x++) {
+                        Cell *c = s.grid->C(x, y).get();
+                        if (c) {
+                            vector<Cell *> itercells;
+                            c->CollectCells(itercells);
+                            for (auto sub_c : itercells) {
+                                total_words += sub_c->text.GetWordCount();
+                            }
+                        }
+                    }
+                }
+                SetStatusText(wxString::Format(_("%d cell(s) (%d words)"), s.xs * s.ys, total_words), 4);
+            }
         }
     }
 
