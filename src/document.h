@@ -1926,6 +1926,31 @@ struct Document {
 
             case A_WRAP: return selected.Wrap(this);
 
+            case A_SPLIT_CELL: {
+                Cell *cell;
+                if ((cell = selected.ThinExpand(this)) == nullptr) { return OneCell(); }
+                if (!selected.TextEdit()) return wxEmptyString;
+                selected.grid->cell->AddUndo(this);
+
+                wxString left = cell->text.t.Left(selected.cursor);
+                wxString right = cell->text.t.Mid(selected.cursor);
+
+                cell->text.t = left;
+                selected.grid->InsertCells(-1, selected.y + 1, 0, 1);
+
+                Cell *newcell = selected.grid->C(selected.x, selected.y + 1).get();
+                newcell->text.t = right;
+                newcell->CloneStyleFrom(cell);
+
+                SetSelect(Selection(selected.grid, selected.x, selected.y + 1, 1, 1));
+                selected.EnterEdit(this, 0, 0);
+
+                UpdateLayout();
+                ScrollIfSelectionOutOfView();
+                canvas->Refresh();
+                return wxEmptyString;
+            }
+
             case A_RESETSIZE:
             case A_RESETWIDTH:
             case A_RESETSTYLE:
